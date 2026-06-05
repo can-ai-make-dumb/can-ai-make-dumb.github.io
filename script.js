@@ -1,11 +1,8 @@
 ﻿// ─── Configuration ────────────────────────────────────────────────────────────
-// OpenRouter API key – kostenlos unter https://openrouter.ai/keys erstellen
 const OPENROUTER_API_KEY = "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";
 
 const MODEL = "google/gemma-4-31b-it:free";
 
-// Path to the file whose contents are sent as system prompt.
-// Plain text file in the same directory as index.html.
 const SEND_TO_AI_FILE = "SendToAI.txt";
 
 // Sidebar quick-prompt buttons
