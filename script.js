@@ -1,4 +1,3 @@
-﻿// ─── Configuration ────────────────────────────────────────────────────────────
 const OPENROUTER_API_KEY = "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";
 
 const MODEL = "google/gemma-4-31b-it:free";
@@ -18,13 +17,13 @@ const SIDEBAR_ITEMS = [
     sub: "Conclusion = Fazit",          active: true                                     },
 ];
 
-// ─── DOM References ────────────────────────────────────────────────────────────
+// DOM References
 const chatBox   = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
 const sendBtn   = document.getElementById("sendBtn");
 const sidebar   = document.getElementById("sidebar");
 
-// ─── Sidebar Buttons ───────────────────────────────────────────────────────────
+// Sidebar Buttons
 SIDEBAR_ITEMS.forEach(item => {
   const btn = document.createElement("button");
   btn.className = "sidebar-btn" + (item.active ? " active" : "");
@@ -45,7 +44,7 @@ SIDEBAR_ITEMS.forEach(item => {
   sidebar.appendChild(btn);
 });
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 function scrollToBottom() {
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -108,7 +107,6 @@ function showError(thinkingRow, message) {
   replaceThinkingWithAnswer(thinkingRow, "⚠️ " + message);
 }
 
-// ─── Load SendToAI.txt context ─────────────────────────────────────────────────
 let systemContext = "";
 
 async function loadContext() {
@@ -118,14 +116,13 @@ async function loadContext() {
     if (res.ok) {
       systemContext = await res.text();
     } else {
-      console.warn("SendToAI.txt not found. Proceeding without context.");
+      console.warn("SendToAI.txt can't be loaded.");
     }
   } catch (e) {
-    console.warn("SendToAI.txt could not be loaded:", e);
+    console.warn("SendToAI.txt can't be loaded:", e);
   }
 }
 
-// ─── OpenRouter API Call ───────────────────────────────────────────────────────
 async function sendToAI(userMessage) {
   const messages = [];
 
@@ -160,11 +157,10 @@ async function sendToAI(userMessage) {
   const data = await response.json();
   const text = data && data.choices && data.choices[0] &&
                data.choices[0].message && data.choices[0].message.content;
-  if (!text) throw new Error("Empty response from model.");
+  if (!text) throw new Error("Empty response from the model.");
   return text;
 }
 
-// ─── Send Handler ──────────────────────────────────────────────────────────────
 async function handleSend() {
   const text = userInput.value.trim();
   if (!text) return;
@@ -188,7 +184,6 @@ async function handleSend() {
   }
 }
 
-// ─── Event Listeners ───────────────────────────────────────────────────────────
 sendBtn.addEventListener("click", handleSend);
 
 userInput.addEventListener("keydown", function(e) {
@@ -198,5 +193,197 @@ userInput.addEventListener("keydown", function(e) {
   }
 });
 
-// ─── Init ──────────────────────────────────────────────────────────────────────
 loadContext();
+
+const MAINTENANCE_KEY = "testai_maintenance";
+
+const maintenanceOverlay = document.getElementById("maintenanceOverlay");
+const adminOverlay       = document.getElementById("adminOverlay");
+const adminClose         = document.getElementById("adminClose");
+const adminStart         = document.getElementById("adminStart");
+const adminStop          = document.getElementById("adminStop");
+const etaDisplay         = document.getElementById("etaDisplay");
+const countdownDisplay   = document.getElementById("countdownDisplay");
+const progressBar        = document.getElementById("progressBar");
+const customDuration     = document.getElementById("customDuration");
+const durBtns            = document.querySelectorAll(".dur-btn");
+
+let maintenanceTimer = null;
+let selectedMinutes  = null;
+
+durBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    durBtns.forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    selectedMinutes = parseInt(btn.dataset.val, 10);
+    customDuration.value = "";
+  });
+});
+
+customDuration.addEventListener("input", () => {
+  durBtns.forEach(b => b.classList.remove("selected"));
+  selectedMinutes = null;
+});
+
+const PW_HASH = "1eaec6de0931f1f929271e159ebc56a07c280cd46ed19909caf763a364e57497";
+
+const pwOverlay = document.getElementById("pwOverlay");
+const pwInput   = document.getElementById("pwInput");
+const pwSubmit  = document.getElementById("pwSubmit");
+const pwError   = document.getElementById("pwError");
+
+async function sha256(str) {
+  const buf  = await crypto.subtle.digest("SHA-256",
+    new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function openPasswordPrompt() {
+  pwInput.value = "";
+  pwError.textContent = "";
+  pwOverlay.classList.add("active");
+  setTimeout(() => pwInput.focus(), 80);
+}
+
+async function submitPassword() {
+  const entered = pwInput.value;
+  if (!entered) return;
+
+  const hash = await sha256(entered);
+  if (hash === PW_HASH) {
+    pwOverlay.classList.remove("active");
+    adminOverlay.classList.add("active");
+    pwInput.value = "";
+  } else {
+    pwError.textContent = "Wrong password.";
+    pwInput.value = "";
+    pwInput.classList.add("pw-shake");
+    setTimeout(() => pwInput.classList.remove("pw-shake"), 500);
+    pwInput.focus();
+  }
+}
+
+pwSubmit.addEventListener("click", submitPassword);
+pwInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") submitPassword();
+});
+
+pwOverlay.addEventListener("click", (e) => {
+  if (e.target === pwOverlay) pwOverlay.classList.remove("active");
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === "A") {
+    e.preventDefault();
+    if (adminOverlay.classList.contains("active")) {
+      adminOverlay.classList.remove("active");
+    } else {
+      openPasswordPrompt();
+    }
+  }
+});
+
+adminClose.addEventListener("click", () => {
+  adminOverlay.classList.remove("active");
+});
+
+adminOverlay.addEventListener("click", (e) => {
+  if (e.target === adminOverlay) adminOverlay.classList.remove("active");
+});
+
+// start maintenance
+adminStart.addEventListener("click", () => {
+  const mins = selectedMinutes || parseInt(customDuration.value, 10);
+  if (!mins || mins < 1) {
+    customDuration.style.borderColor = "#e74c3c";
+    setTimeout(() => customDuration.style.borderColor = "", 1200);
+    return;
+  }
+
+  const endTime = Date.now() + mins * 60 * 1000;
+  localStorage.setItem(MAINTENANCE_KEY, endTime.toString());
+
+  adminOverlay.classList.remove("active");
+  startMaintenanceUI(endTime);
+});
+
+// stop maintenance
+adminStop.addEventListener("click", () => {
+  localStorage.removeItem(MAINTENANCE_KEY);
+  stopMaintenanceUI();
+  adminOverlay.classList.remove("active");
+});
+
+// UI
+function startMaintenanceUI(endTime) {
+  const totalMs = endTime - Date.now();
+  if (totalMs <= 0) {
+    localStorage.removeItem(MAINTENANCE_KEY);
+    return;
+  }
+
+  const totalSec = Math.ceil(totalMs / 1000);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+
+  // Set ETA label
+  etaDisplay.textContent = mins > 0
+    ? (mins + " min" + (secs > 0 ? " " + secs + " sec" : ""))
+    : (secs + " sec");
+
+  maintenanceOverlay.classList.add("active");
+  adminStart.style.display = "none";
+  adminStop.style.display  = "block";
+
+  // Animate progress bar and countdown
+  clearInterval(maintenanceTimer);
+
+  function tick() {
+    const remaining = endTime - Date.now();
+    if (remaining <= 0) {
+      progressBar.style.width = "100%";
+      clearInterval(maintenanceTimer);
+      setTimeout(() => {
+        localStorage.removeItem(MAINTENANCE_KEY);
+        location.reload();
+      }, 600);
+      return;
+    }
+
+    const elapsed = (endTime - Date.now() - totalMs) + totalMs - remaining;
+    const pct = Math.min(100, (elapsed / totalMs) * 100);
+    progressBar.style.width = pct + "%";
+
+    const remSec  = Math.ceil(remaining / 1000);
+    const remMins = Math.floor(remSec / 60);
+    const remS    = remSec % 60;
+    countdownDisplay.textContent = remMins > 0
+      ? remMins + "m " + String(remS).padStart(2, "0") + "s"
+      : remS + "s";
+  }
+
+  tick();
+  maintenanceTimer = setInterval(tick, 1000);
+}
+
+function stopMaintenanceUI() {
+  clearInterval(maintenanceTimer);
+  maintenanceOverlay.classList.remove("active");
+  progressBar.style.width = "0%";
+  adminStart.style.display = "block";
+  adminStop.style.display  = "none";
+}
+
+// Check for maimtenance
+(function checkOnLoad() {
+  const stored = localStorage.getItem(MAINTENANCE_KEY);
+  if (!stored) return;
+  const endTime = parseInt(stored, 10);
+  if (isNaN(endTime) || Date.now() >= endTime) {
+    localStorage.removeItem(MAINTENANCE_KEY);
+    return;
+  }
+  startMaintenanceUI(endTime);
+})();
