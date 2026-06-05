@@ -18,7 +18,7 @@ const db = getDatabase(app);
 
 
 
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "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";
 
 const MODEL = "google/gemma-4-31b-it:free";
 
