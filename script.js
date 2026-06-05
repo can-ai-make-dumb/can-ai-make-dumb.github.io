@@ -389,7 +389,9 @@ function stopMaintenanceUI() {
 
 // Check for maimtenance
 async function checkOnLoad() {
-  const snap = await get(ref(db, "maintenance"));
+  const snap = await window.fbGet(
+  window.fbRef(window.db, "maintenance")
+);
 
   if (!snap.exists()) return;
 
