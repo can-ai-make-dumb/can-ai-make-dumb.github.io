@@ -15,7 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "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";
 const MODEL = "google/gemma-4-31b-it:free";
 const SEND_TO_AI_FILE = "SendToAI.txt";
 
