@@ -6,7 +6,7 @@ Examples of AI include:
 • ChatGPT
 • Google Gemini
 • Claude
-• Midjourney
+• Deepseek
 
 AI can answer questions, generate text, create images, translate languages, and help solve problems.
 
