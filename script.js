@@ -1,4 +1,4 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -15,80 +15,99 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const OPENROUTER_API_KEY = "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";
-const MODEL = "google/gemma-4-31b-it:free";
+const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev/";
+
+const TEXT_MODEL  = "google/gemma-4-31b-it:free";
+const IMAGE_MODEL = "black-forest-labs/FLUX.1-schnell:free";
+
 const SEND_TO_AI_FILE = "SendToAI.txt";
 
 const SIDEBAR_ITEMS = [
-  { label: "What's AI?",                       prompt: "What's AI?"                         },
-  { label: "What can AI be used for?",          prompt: "What can AI be used for?"           },
-  { label: "Can AI make you dumb?",             prompt: "Can AI make you dumb?", active: true},
-  { label: "What are AI hallucinations?",       prompt: "What are AI hallucinations?"        },
+  { label: "What's AI?",                        prompt: "What's AI?"                         },
+  { label: "What can AI be used for?",           prompt: "What can AI be used for?"           },
+  { label: "Can AI make you dumb?",              prompt: "Can AI make you dumb?", active: true},
+  { label: "What are AI hallucinations?",        prompt: "What are AI hallucinations?"        },
   { label: "Why do AI systems have restrictions?", prompt: "Why do AI systems have restrictions?" },
-  { label: "AI in School and Homework",         prompt: "AI in School and Homework"          },
-  { label: "Does AI know what it is doing?",    prompt: "Does AI know what it is doing?"     },
+  { label: "AI in School and Homework",          prompt: "AI in School and Homework"          },
+  { label: "Does AI know what it is doing?",     prompt: "Does AI know what it is doing?"     },
   { label: "Conclusion", prompt: "Give me a conclusion about AI.", sub: "Conclusion = Fazit", active: true },
 ];
 
-const chatBox      = document.getElementById("chatBox");
-const userInput    = document.getElementById("userInput");
-const sendBtn      = document.getElementById("sendBtn");
-const sidebar      = document.getElementById("sidebar");
-const apiDot       = document.getElementById("apiDot");
-const apiLabel     = document.getElementById("apiLabel");
-const themeToggle  = document.getElementById("themeToggle");
+// ── DOM refs ───────────────────────────────────────────────────────────
+const chatBox     = document.getElementById("chatBox");
+const userInput   = document.getElementById("userInput");
+const sendBtn     = document.getElementById("sendBtn");
+const sidebar     = document.getElementById("sidebar");
+const apiDot      = document.getElementById("apiDot");
+const apiLabel    = document.getElementById("apiLabel");
+const themeToggle = document.getElementById("themeToggle");
+const modeToggle  = document.getElementById("modeToggle");
+const modeLabelEl = document.getElementById("modeLabel");
 
+// ════════════════════════════════════════════════════
+// THEME
+// ════════════════════════════════════════════════════
 const THEME_KEY = "testai_theme";
-
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem(THEME_KEY, theme);
 }
-
 applyTheme(localStorage.getItem(THEME_KEY) || "light");
-
 themeToggle.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme");
-  applyTheme(current === "dark" ? "light" : "dark");
+  applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
 });
 
+// ════════════════════════════════════════════════════
+// MODE TOGGLE (Text / Image)
+// ════════════════════════════════════════════════════
+let currentMode = "text"; // "text" | "image"
+
+modeToggle.addEventListener("click", () => {
+  currentMode = currentMode === "text" ? "image" : "text";
+  updateModeUI();
+});
+
+function updateModeUI() {
+  if (currentMode === "image") {
+    modeToggle.classList.add("image-mode");
+    modeLabelEl.textContent = "Image Mode";
+    userInput.placeholder = "Describe an image...";
+  } else {
+    modeToggle.classList.remove("image-mode");
+    modeLabelEl.textContent = "Text Mode";
+    userInput.placeholder = "Ask me anything you want...";
+  }
+}
+
+// ════════════════════════════════════════════════════
+// API STATUS
+// ════════════════════════════════════════════════════
 async function checkApiStatus() {
   apiDot.className = "api-dot checking";
   apiLabel.textContent = "Checking...";
-
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + OPENROUTER_API_KEY,
-        "HTTP-Referer": window.location.href,
-        "X-Title": "TestAI"
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1,
-        messages: [{ role: "user", content: "hi" }]
-      })
-    });
-
-    if (res.ok || res.status === 200) {
+    const res = await fetch(WORKER_URL + "/status", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}) });
+    const data = await res.json();
+    if (data.ok) {
       apiDot.className = "api-dot online";
       apiLabel.textContent = "Online";
     } else {
       apiDot.className = "api-dot offline";
       apiLabel.textContent = "API is not responding";
     }
-  } catch (e) {
+  } catch {
     apiDot.className = "api-dot offline";
     apiLabel.textContent = "API is not responding";
   }
 }
-
 checkApiStatus();
-
 setInterval(checkApiStatus, 60000);
 
+// ════════════════════════════════════════════════════
+// SIDEBAR
+// ════════════════════════════════════════════════════
 SIDEBAR_ITEMS.forEach(item => {
   const btn = document.createElement("button");
   btn.className = "sidebar-btn" + (item.active ? " active" : "");
@@ -99,16 +118,14 @@ SIDEBAR_ITEMS.forEach(item => {
     sub.textContent = item.sub;
     btn.appendChild(sub);
   }
-  btn.addEventListener("click", () => {
-    userInput.value = item.prompt;
-    userInput.focus();
-  });
+  btn.addEventListener("click", () => { userInput.value = item.prompt; userInput.focus(); });
   sidebar.appendChild(btn);
 });
 
-function scrollToBottom() {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
+function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
 
 function buildThinkingAvatar() {
   const avatar = document.createElement("div");
@@ -150,7 +167,7 @@ function appendThinking() {
   const avatar = buildThinkingAvatar();
   const label = document.createElement("span");
   label.className = "thinking-label";
-  label.textContent = "Thinking...";
+  label.textContent = currentMode === "image" ? "Generating image..." : "Thinking...";
   row.appendChild(avatar);
   row.appendChild(label);
   chatBox.appendChild(row);
@@ -158,34 +175,123 @@ function appendThinking() {
   return row;
 }
 
+// ── Feature 1: Markdown bold (**text**) renderer ──
 function renderAIText(bubble, text) {
-
   bubble.innerHTML = "";
   const lines = text.split("\n");
-  lines.forEach((line, i) => {
+  lines.forEach(line => {
     if (line.trim() === "") {
-
       const spacer = document.createElement("div");
       spacer.className = "ai-line-spacer";
       bubble.appendChild(spacer);
     } else {
       const p = document.createElement("p");
       p.className = "ai-line";
-      p.textContent = line;
+      // Parse **bold** and *italic*
+      p.innerHTML = line
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g,     "<em>$1</em>")
+        .replace(/`(.+?)`/g,       "<code>$1</code>");
       bubble.appendChild(p);
     }
   });
 }
 
-function replaceThinkingWithAnswer(thinkingRow, text) {
+// ── Feature 3: Action buttons (Copy + Flag) ──────
+function buildActionButtons(userPrompt, aiText) {
+  const bar = document.createElement("div");
+  bar.className = "action-bar";
+
+  // Copy button
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "action-btn";
+  copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`;
+  copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(aiText).then(() => {
+      copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+      copyBtn.classList.add("copied");
+      setTimeout(() => {
+        copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`;
+        copyBtn.classList.remove("copied");
+      }, 2000);
+    });
+  });
+
+  // Flag button
+  const flagBtn = document.createElement("button");
+  flagBtn.className = "action-btn flag-btn";
+  flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Flag`;
+  flagBtn.addEventListener("click", async () => {
+    flagBtn.disabled = true;
+    flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Sending...`;
+    try {
+      const res = await fetch(WORKER_URL + "/flag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userMessage: userPrompt, aiResponse: aiText })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Flagged ✓`;
+        flagBtn.classList.add("flagged");
+      } else {
+        flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Failed`;
+        flagBtn.disabled = false;
+      }
+    } catch {
+      flagBtn.innerHTML = `Flag (error)`;
+      flagBtn.disabled = false;
+    }
+  });
+
+  bar.appendChild(copyBtn);
+  bar.appendChild(flagBtn);
+  return bar;
+}
+
+function replaceThinkingWithAnswer(thinkingRow, text, userPrompt, isImage = false) {
   const row = document.createElement("div");
   row.className = "message-row ai";
   const avatar = buildLogoAvatar();
-  const bubble = document.createElement("div");
-  bubble.className = "bubble-ai";
-  renderAIText(bubble, text);
+  const wrapper = document.createElement("div");
+  wrapper.className = "ai-bubble-wrapper";
+
+  if (isImage) {
+    // Feature 2: Image response
+    const bubble = document.createElement("div");
+    bubble.className = "bubble-ai bubble-ai-image";
+
+    const img = document.createElement("img");
+    img.className = "ai-generated-image";
+    img.src = text; // text = image URL
+    img.alt = "Generated image";
+    img.loading = "lazy";
+    bubble.appendChild(img);
+
+    // Download button
+    const dlBtn = document.createElement("a");
+    dlBtn.className = "image-download-btn";
+    dlBtn.href = text;
+    dlBtn.download = "ai-image.png";
+    dlBtn.target = "_blank";
+    dlBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download`;
+    bubble.appendChild(dlBtn);
+
+    wrapper.appendChild(bubble);
+  } else {
+    const bubble = document.createElement("div");
+    bubble.className = "bubble-ai";
+    renderAIText(bubble, text);
+    wrapper.appendChild(bubble);
+  }
+
+  wrapper.appendChild(buildActionButtons(userPrompt, text));
+
   row.appendChild(avatar);
-  row.appendChild(bubble);
+  row.appendChild(wrapper);
   chatBox.replaceChild(row, thinkingRow);
   scrollToBottom();
 }
@@ -194,60 +300,80 @@ function showError(thinkingRow, message) {
   const row = document.createElement("div");
   row.className = "message-row ai";
   const avatar = buildLogoAvatar();
+  const wrapper = document.createElement("div");
+  wrapper.className = "ai-bubble-wrapper";
   const bubble = document.createElement("div");
   bubble.className = "bubble-ai";
   bubble.textContent = "⚠️ " + message;
+  wrapper.appendChild(bubble);
   row.appendChild(avatar);
-  row.appendChild(bubble);
+  row.appendChild(wrapper);
   chatBox.replaceChild(row, thinkingRow);
   scrollToBottom();
 }
 
+// ════════════════════════════════════════════════════
+// CONTEXT
+// ════════════════════════════════════════════════════
 let systemContext = "";
-
 async function loadContext() {
   if (!SEND_TO_AI_FILE) return;
   try {
     const res = await fetch(SEND_TO_AI_FILE);
     if (res.ok) systemContext = await res.text();
-    else console.warn("SendToAI.txt can't be loaded.");
-  } catch (e) {
-    console.warn("SendToAI.txt can't be loaded:", e);
-  }
+  } catch {}
 }
 
-async function sendToAI(userMessage) {
+// ════════════════════════════════════════════════════
+// AI CALLS (via Worker)
+// ════════════════════════════════════════════════════
+async function sendTextToAI(userMessage) {
   const messages = [];
   if (systemContext) messages.push({ role: "system", content: systemContext.trim() });
   messages.push({ role: "user", content: userMessage });
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const res = await fetch(WORKER_URL + "/chat", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + OPENROUTER_API_KEY,
-      "HTTP-Referer": window.location.href,
-      "X-Title": "TestAI"
-    },
-    body: JSON.stringify({ model: MODEL, messages })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, model: TEXT_MODEL })
   });
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    const msg = errData?.error?.message || "HTTP " + response.status;
-    throw new Error(msg);
-  }
-
-  const data = await response.json();
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
   const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("Empty response from the model.");
-
-  apiDot.className = "api-dot online";
-  apiLabel.textContent = "Online";
-
+  if (!text) throw new Error("Empty response from model.");
   return text;
 }
 
+async function sendImageToAI(prompt) {
+  const res = await fetch(WORKER_URL + "/image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt })
+  });
+
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+
+  // OpenRouter image response: content may be a URL or base64
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error("No image returned.");
+
+  // If it's a URL string return it directly, otherwise wrap as data URI
+  if (typeof content === "string" && content.startsWith("http")) return content;
+
+  // Some models return array with image_url
+  if (Array.isArray(content)) {
+    const imgPart = content.find(p => p.type === "image_url");
+    if (imgPart) return imgPart.image_url.url;
+  }
+
+  throw new Error("Unexpected image format from model.");
+}
+
+// ════════════════════════════════════════════════════
+// SEND HANDLER
+// ════════════════════════════════════════════════════
 async function handleSend() {
   const text = userInput.value.trim();
   if (!text) return;
@@ -260,8 +386,15 @@ async function handleSend() {
   const thinkingRow = appendThinking();
 
   try {
-    const answer = await sendToAI(text);
-    replaceThinkingWithAnswer(thinkingRow, answer);
+    if (currentMode === "image") {
+      const imageUrl = await sendImageToAI(text);
+      replaceThinkingWithAnswer(thinkingRow, imageUrl, text, true);
+    } else {
+      const answer = await sendTextToAI(text);
+      replaceThinkingWithAnswer(thinkingRow, answer, text, false);
+    }
+    apiDot.className = "api-dot online";
+    apiLabel.textContent = "Online";
   } catch (err) {
     apiDot.className = "api-dot offline";
     apiLabel.textContent = "API is not responding";
@@ -280,8 +413,10 @@ userInput.addEventListener("keydown", (e) => {
 
 loadContext();
 
+// ════════════════════════════════════════════════════
+// MAINTENANCE SYSTEM
+// ════════════════════════════════════════════════════
 const MAINTENANCE_KEY = "testai_maintenance";
-
 const maintenanceOverlay = document.getElementById("maintenanceOverlay");
 const adminOverlay       = document.getElementById("adminOverlay");
 const adminClose         = document.getElementById("adminClose");
@@ -304,14 +439,12 @@ durBtns.forEach(btn => {
     customDuration.value = "";
   });
 });
-
 customDuration.addEventListener("input", () => {
   durBtns.forEach(b => b.classList.remove("selected"));
   selectedMinutes = null;
 });
 
 const PW_HASH = "1eaec6de0931f1f929271e159ebc56a07c280cd46ed19909caf763a364e57497";
-
 const pwOverlay = document.getElementById("pwOverlay");
 const pwInput   = document.getElementById("pwInput");
 const pwSubmit  = document.getElementById("pwSubmit");
@@ -321,14 +454,11 @@ async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
-
 function openPasswordPrompt() {
-  pwInput.value = "";
-  pwError.textContent = "";
+  pwInput.value = ""; pwError.textContent = "";
   pwOverlay.classList.add("active");
   setTimeout(() => pwInput.focus(), 80);
 }
-
 async function submitPassword() {
   const entered = pwInput.value;
   if (!entered) return;
@@ -345,7 +475,6 @@ async function submitPassword() {
     pwInput.focus();
   }
 }
-
 pwSubmit.addEventListener("click", submitPassword);
 pwInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submitPassword(); });
 pwOverlay.addEventListener("click", (e) => { if (e.target === pwOverlay) pwOverlay.classList.remove("active"); });
@@ -353,14 +482,11 @@ pwOverlay.addEventListener("click", (e) => { if (e.target === pwOverlay) pwOverl
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.shiftKey && e.key === "A") {
     e.preventDefault();
-    if (adminOverlay.classList.contains("active")) {
-      adminOverlay.classList.remove("active");
-    } else {
-      openPasswordPrompt();
-    }
+    adminOverlay.classList.contains("active")
+      ? adminOverlay.classList.remove("active")
+      : openPasswordPrompt();
   }
 });
-
 adminClose.addEventListener("click", () => adminOverlay.classList.remove("active"));
 adminOverlay.addEventListener("click", (e) => { if (e.target === adminOverlay) adminOverlay.classList.remove("active"); });
 
@@ -376,7 +502,6 @@ adminStart.addEventListener("click", async () => {
   adminOverlay.classList.remove("active");
   startMaintenanceUI(endTime);
 });
-
 adminStop.addEventListener("click", async () => {
   await set(ref(db, "maintenance"), { enabled: false, endTime: 0 });
   stopMaintenanceUI();
@@ -386,20 +511,13 @@ adminStop.addEventListener("click", async () => {
 function startMaintenanceUI(endTime) {
   const totalMs = endTime - Date.now();
   if (totalMs <= 0) { localStorage.removeItem(MAINTENANCE_KEY); return; }
-
   const totalSec = Math.ceil(totalMs / 1000);
-  const mins = Math.floor(totalSec / 60);
-  const secs = totalSec % 60;
-  etaDisplay.textContent = mins > 0
-    ? (mins + " min" + (secs > 0 ? " " + secs + " sec" : ""))
-    : (secs + " sec");
-
+  const mins = Math.floor(totalSec / 60), secs = totalSec % 60;
+  etaDisplay.textContent = mins > 0 ? (mins + " min" + (secs > 0 ? " " + secs + " sec" : "")) : (secs + " sec");
   maintenanceOverlay.classList.add("active");
   adminStart.style.display = "none";
   adminStop.style.display  = "block";
-
   clearInterval(maintenanceTimer);
-
   function tick() {
     const remaining = endTime - Date.now();
     if (remaining <= 0) {
@@ -408,20 +526,13 @@ function startMaintenanceUI(endTime) {
       setTimeout(() => { localStorage.removeItem(MAINTENANCE_KEY); location.reload(); }, 600);
       return;
     }
-    const elapsed = totalMs - remaining;
-    progressBar.style.width = Math.min(100, (elapsed / totalMs) * 100) + "%";
-    const remSec  = Math.ceil(remaining / 1000);
-    const remMins = Math.floor(remSec / 60);
-    const remS    = remSec % 60;
-    countdownDisplay.textContent = remMins > 0
-      ? remMins + "m " + String(remS).padStart(2, "0") + "s"
-      : remS + "s";
+    progressBar.style.width = Math.min(100, ((totalMs - remaining) / totalMs) * 100) + "%";
+    const remSec = Math.ceil(remaining / 1000), remMins = Math.floor(remSec / 60), remS = remSec % 60;
+    countdownDisplay.textContent = remMins > 0 ? remMins + "m " + String(remS).padStart(2, "0") + "s" : remS + "s";
   }
-
   tick();
   maintenanceTimer = setInterval(tick, 1000);
 }
-
 function stopMaintenanceUI() {
   clearInterval(maintenanceTimer);
   maintenanceOverlay.classList.remove("active");
@@ -429,12 +540,10 @@ function stopMaintenanceUI() {
   adminStart.style.display = "block";
   adminStop.style.display  = "none";
 }
-
 async function checkOnLoad() {
   const snap = await get(ref(db, "maintenance"));
   if (!snap.exists()) return;
   const data = snap.val();
   if (data.enabled) startMaintenanceUI(data.endTime);
 }
-
 checkOnLoad();
