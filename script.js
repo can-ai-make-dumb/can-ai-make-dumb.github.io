@@ -15,7 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev/";
+const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev";
 
 const TEXT_MODEL  = "google/gemma-4-31b-it:free";
 const IMAGE_MODEL = "black-forest-labs/FLUX.1-schnell:free";
