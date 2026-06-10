@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de" data-theme="light">
 <head>
   <meta charset="UTF-8" />
@@ -25,26 +25,37 @@
       <span>Can AI make us dumb?</span>
     </div>
 
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-      
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
-        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
+    <div class="header-controls">
+      <!-- Mode toggle -->
+      <button class="mode-toggle" id="modeToggle" aria-label="Switch mode">
+        <svg class="icon-text-mode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+        </svg>
+        <svg class="icon-image-mode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span id="modeLabel">Text Mode</span>
+      </button>
 
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+      <!-- Dark/Light toggle -->
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <main>
     <div class="chat-wrapper">
       <div class="chat-box" id="chatBox">
-
         <div class="api-status" id="apiStatus">
           <span class="api-dot" id="apiDot"></span>
-          <span class="api-label" id="apiLabel">Pinging...</span>
+          <span class="api-label" id="apiLabel">Checking...</span>
         </div>
       </div>
       <div class="input-bar">
@@ -60,6 +71,7 @@
     <aside class="sidebar" id="sidebar"></aside>
   </main>
 
+  <!-- MAINTENANCE OVERLAY -->
   <div class="maintenance-overlay" id="maintenanceOverlay">
     <div class="maintenance-card">
       <div class="maintenance-icon">
@@ -76,13 +88,12 @@
       <h1>We're deploying an Update!</h1>
       <p class="maintenance-sub">The AI isn't dumb, we're just improving your experience.</p>
       <p class="maintenance-eta">Estimated time: <span id="etaDisplay">--:--</span></p>
-      <div class="progress-track">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
+      <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
       <p class="maintenance-countdown">Back in <span id="countdownDisplay">--</span></p>
     </div>
   </div>
 
+  <!-- PASSWORD PROMPT -->
   <div class="pw-overlay" id="pwOverlay">
     <div class="pw-card">
       <div class="pw-lock">🔒</div>
@@ -93,10 +104,11 @@
     </div>
   </div>
 
+  <!-- ADMIN PANEL -->
   <div class="admin-overlay" id="adminOverlay">
     <div class="admin-card">
       <div class="admin-header">
-        <span class="admin-title">Maintenance Control</span>
+        <span class="admin-title">⚙️ Maintenance Control</span>
         <button class="admin-close" id="adminClose">✕</button>
       </div>
       <div class="admin-body">
