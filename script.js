@@ -627,7 +627,7 @@ async function checkForReviewedReports() {
           : report.aiResponse;
         reviewNoteEl.textContent = report.note && report.note.trim() !== ""
           ? report.note
-          : "Thanks for helping us improve TestAI.";
+          : "Your report has been reviewed and accepted";
         reviewOverlay.classList.add("active");
 
         // Mark as seen so it won't show again
