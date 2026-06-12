@@ -108,10 +108,17 @@
   <div class="admin-overlay" id="adminOverlay">
     <div class="admin-card">
       <div class="admin-header">
-        <span class="admin-title">⚙️ Maintenance Control</span>
+        <span class="admin-title">⚙️ Admin Panel</span>
         <button class="admin-close" id="adminClose">✕</button>
       </div>
-      <div class="admin-body">
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="maintenance">Maintenance</button>
+        <button class="admin-tab" data-tab="reports">Reports</button>
+      </div>
+
+      <!-- Maintenance Tab -->
+      <div class="admin-body admin-tab-content" data-tab-content="maintenance">
         <label class="admin-label">Duration (minutes)</label>
         <div class="admin-duration-row">
           <button class="dur-btn" data-val="5">5 min</button>
@@ -126,6 +133,28 @@
         <button class="admin-stop-btn" id="adminStop" style="display:none">Stop Maintenance</button>
         <p class="admin-hint">Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> to open/close</p>
       </div>
+
+      <!-- Reports Tab -->
+      <div class="admin-body admin-tab-content" data-tab-content="reports" style="display:none">
+        <label class="admin-label">Pending Reports</label>
+        <div class="reports-list" id="reportsList">
+          <p class="reports-empty">Loading...</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- REVIEWED REPORT OVERLAY (shown to user who flagged) -->
+  <div class="review-overlay" id="reviewOverlay">
+    <div class="review-card">
+      <div class="review-icon">✅</div>
+      <h1>We reviewed your report</h1>
+      <p class="review-label">Reported response:</p>
+      <p class="review-quote" id="reviewMessage"></p>
+      <p class="review-label">Note from the team:</p>
+      <p class="review-note" id="reviewNote"></p>
+      <button class="review-close-btn" id="reviewClose">Got it</button>
     </div>
   </div>
 
