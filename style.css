@@ -398,3 +398,177 @@ body::-webkit-scrollbar-thumb { background: #b0b0b0; border-radius: 4px; }
 .pw-btn:hover { opacity: 0.88; transform: translateY(-1px); }
 @keyframes shake { 0%,100% { transform:translateX(0); } 20% { transform:translateX(-8px); } 40% { transform:translateX(8px); } 60% { transform:translateX(-5px); } 80% { transform:translateX(5px); } }
 .pw-shake { animation: shake 0.45s ease; border-color: #e74c3c !important; }
+
+/* ════ ADMIN TABS ════ */
+.admin-tabs {
+  display: flex;
+  border-bottom: 1px solid #2a2a2a;
+}
+.admin-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #888;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 12px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  border-bottom: 2px solid transparent;
+}
+.admin-tab:hover { color: #ccc; }
+.admin-tab.active {
+  color: #fff;
+  border-bottom-color: #a855f7;
+}
+
+.admin-tab-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ════ REPORTS LIST ════ */
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.reports-list::-webkit-scrollbar { width: 4px; }
+.reports-list::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+.reports-empty {
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.report-card {
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-field {
+  font-size: 0.78rem;
+  color: #ccc;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.report-field strong { color: #a78bfa; }
+
+.report-note-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  padding: 8px 10px;
+  outline: none;
+  resize: vertical;
+  min-height: 50px;
+  transition: border-color 0.15s;
+}
+.report-note-input:focus { border-color: #a855f7; }
+.report-note-input::placeholder { color: #555; }
+
+.report-accept-btn {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 9px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.report-accept-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.report-accept-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* ════ REVIEW OVERLAY (for the flagging user) ════ */
+.review-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 9500;
+  background: rgba(0,0,0,0.7);
+  align-items: center; justify-content: center;
+  font-family: var(--font);
+  backdrop-filter: blur(6px);
+}
+.review-overlay.active { display: flex; }
+
+.review-card {
+  background: var(--chat-bg);
+  border: 1px solid var(--chat-border);
+  border-radius: 16px;
+  padding: 32px 28px;
+  width: 420px;
+  max-width: 92vw;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+
+.review-icon { font-size: 2.4rem; margin-bottom: 12px; }
+
+.review-card h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 18px;
+}
+
+.review-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--disclaimer-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.review-quote {
+  font-size: 0.85rem;
+  color: var(--dark);
+  background: rgba(128,128,128,0.12);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  margin-bottom: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.review-note {
+  font-size: 0.9rem;
+  color: var(--dark);
+  text-align: left;
+  margin-bottom: 22px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.review-close-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.review-close-btn:hover { opacity: 0.9; transform: translateY(-1px); }
