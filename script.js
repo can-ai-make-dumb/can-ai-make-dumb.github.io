@@ -15,10 +15,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// ── Cloudflare Worker──────────────────────────────────────────────
 const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev";
 
 const TEXT_MODEL  = "google/gemma-4-31b-it:free";
-const IMAGE_MODEL = "black-forest-labs/FLUX.1-schnell:free";
+const IMAGE_MODEL = "google/gemini-2.5-flash-image-preview:free";
 
 const SEND_TO_AI_FILE = "SendToAI.txt";
 
@@ -355,20 +356,38 @@ async function sendImageToAI(prompt) {
   if (!res.ok) throw new Error("HTTP " + res.status);
   const data = await res.json();
 
-  // OpenRouter image response: content may be a URL or base64
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("No image returned.");
+  // Debug: log raw response so you can inspect the exact shape in DevTools
+  console.log("Image API raw response:", data);
 
-  // If it's a URL string return it directly, otherwise wrap as data URI
-  if (typeof content === "string" && content.startsWith("http")) return content;
-
-  // Some models return array with image_url
-  if (Array.isArray(content)) {
-    const imgPart = content.find(p => p.type === "image_url");
-    if (imgPart) return imgPart.image_url.url;
+  const msg = data?.choices?.[0]?.message;
+  if (!msg) {
+    throw new Error(data?.error?.message || "No message in response.");
   }
 
-  throw new Error("Unexpected image format from model.");
+  // Format 1: OpenRouter "images" array (Gemini/Imagen style)
+  if (Array.isArray(msg.images) && msg.images.length > 0) {
+    const img = msg.images[0];
+    if (typeof img === "string") return img;
+    if (img.image_url?.url) return img.image_url.url;
+    if (img.url) return img.url;
+  }
+
+  // Format 2: content is a string URL or data URI
+  if (typeof msg.content === "string" && msg.content.trim() !== "") {
+    const c = msg.content.trim();
+    if (c.startsWith("http") || c.startsWith("data:image")) return c;
+  }
+
+  // Format 3: content is an array of parts containing image_url
+  if (Array.isArray(msg.content)) {
+    const imgPart = msg.content.find(p => p.type === "image_url" || p.type === "image");
+    if (imgPart) {
+      if (imgPart.image_url?.url) return imgPart.image_url.url;
+      if (imgPart.url) return imgPart.url;
+    }
+  }
+
+  throw new Error("Unexpected image format from model. Check console for raw response.");
 }
 
 // ════════════════════════════════════════════════════
