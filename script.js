@@ -15,11 +15,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ── Cloudflare Worker──────────────────────────────────────────────
+// ── Cloudflare Worker URL ──────────────────────────────────────────────
 const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev";
 
 const TEXT_MODEL  = "google/gemma-4-31b-it:free";
-const IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
+const IMAGE_MODEL = "google/gemini-2.5-flash-image-preview";
 
 const SEND_TO_AI_FILE = "SendToAI.txt";
 
@@ -350,7 +350,7 @@ async function sendImageToAI(prompt) {
   const res = await fetch(WORKER_URL + "/image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt })
+    body: JSON.stringify({ prompt, model: IMAGE_MODEL })
   });
 
   if (!res.ok) throw new Error("HTTP " + res.status);
