@@ -30,7 +30,7 @@ const USER_ID = getUserId();
 // ── Cloudflare Worker URL ──────────────────────────────────────────────
 const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev";
 
-const TEXT_MODEL  = "google/gemma-4-31b-it:free";
+const TEXT_MODEL  = "openai/gpt-oss-120b:free";
 const IMAGE_MODEL = "google/gemini-2.5-flash-image-preview";
 
 const SEND_TO_AI_FILE = "SendToAI.txt";
