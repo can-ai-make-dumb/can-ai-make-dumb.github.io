@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDLVWWpilLsFaTNa7AL_5MmoVTd8D89cZU",
@@ -14,6 +14,18 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
+// ── Anonymous browser ID (used for flag → review tracking) ────────────
+const USER_ID_KEY = "testai_user_id";
+function getUserId() {
+  let id = localStorage.getItem(USER_ID_KEY);
+  if (!id) {
+    id = "u_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem(USER_ID_KEY, id);
+  }
+  return id;
+}
+const USER_ID = getUserId();
 
 // ── Cloudflare Worker URL ──────────────────────────────────────────────
 const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev";
@@ -229,18 +241,31 @@ function buildActionButtons(userPrompt, aiText) {
     flagBtn.disabled = true;
     flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Sending...`;
     try {
+      // 1) Write report to Firebase (for admin review)
+      const reportId = "r_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 8);
+      await set(ref(db, "reports/" + reportId), {
+        userId: USER_ID,
+        userMessage: userPrompt,
+        aiResponse: aiText,
+        status: "pending",
+        seen: false,
+        note: "",
+        createdAt: Date.now()
+      });
+
+      // 2) Notify Discord via Worker
       const res = await fetch(WORKER_URL + "/flag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userMessage: userPrompt, aiResponse: aiText })
+        body: JSON.stringify({ userMessage: userPrompt, aiResponse: aiText, reportId })
       });
       const data = await res.json();
       if (data.ok) {
         flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Flagged ✓`;
         flagBtn.classList.add("flagged");
       } else {
-        flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Failed`;
-        flagBtn.disabled = false;
+        flagBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Flagged ✓`;
+        flagBtn.classList.add("flagged");
       }
     } catch {
       flagBtn.innerHTML = `Flag (error)`;
@@ -463,6 +488,19 @@ customDuration.addEventListener("input", () => {
   selectedMinutes = null;
 });
 
+// ── Admin tab switching ────────────────────────────
+document.querySelectorAll(".admin-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    const target = tab.dataset.tab;
+    document.querySelectorAll(".admin-tab-content").forEach(content => {
+      content.style.display = content.dataset.tabContent === target ? "flex" : "none";
+    });
+  });
+});
+
 const PW_HASH = "1eaec6de0931f1f929271e159ebc56a07c280cd46ed19909caf763a364e57497";
 const pwOverlay = document.getElementById("pwOverlay");
 const pwInput   = document.getElementById("pwInput");
@@ -566,3 +604,109 @@ async function checkOnLoad() {
   if (data.enabled) startMaintenanceUI(data.endTime);
 }
 checkOnLoad();
+
+// ════════════════════════════════════════════════════
+// REVIEWED-REPORT OVERLAY (shown to the user who flagged)
+// ════════════════════════════════════════════════════
+const reviewOverlay   = document.getElementById("reviewOverlay");
+const reviewNoteEl    = document.getElementById("reviewNote");
+const reviewMsgEl     = document.getElementById("reviewMessage");
+const reviewCloseBtn  = document.getElementById("reviewClose");
+
+async function checkForReviewedReports() {
+  try {
+    const snap = await get(ref(db, "reports"));
+    if (!snap.exists()) return;
+    const reports = snap.val();
+
+    for (const [id, report] of Object.entries(reports)) {
+      if (report.userId === USER_ID && report.status === "reviewed" && !report.seen) {
+        // Show overlay
+        reviewMsgEl.textContent = report.aiResponse.length > 240
+          ? report.aiResponse.substring(0, 240) + "..."
+          : report.aiResponse;
+        reviewNoteEl.textContent = report.note && report.note.trim() !== ""
+          ? report.note
+          : "Thanks for helping us improve TestAI.";
+        reviewOverlay.classList.add("active");
+
+        // Mark as seen so it won't show again
+        await update(ref(db, "reports/" + id), { seen: true });
+        break; // only show one at a time
+      }
+    }
+  } catch (e) {
+    console.warn("Could not check reports:", e);
+  }
+}
+checkForReviewedReports();
+
+reviewCloseBtn.addEventListener("click", () => {
+  reviewOverlay.classList.remove("active");
+});
+
+// ════════════════════════════════════════════════════
+// ADMIN: REPORTS TAB
+// ════════════════════════════════════════════════════
+const reportsListEl = document.getElementById("reportsList");
+
+function renderReports(reports) {
+  reportsListEl.innerHTML = "";
+
+  const entries = Object.entries(reports || {})
+    .filter(([, r]) => r.status === "pending")
+    .sort(([, a], [, b]) => b.createdAt - a.createdAt);
+
+  if (entries.length === 0) {
+    reportsListEl.innerHTML = `<p class="reports-empty">No pending reports 🎉</p>`;
+    return;
+  }
+
+  entries.forEach(([id, report]) => {
+    const card = document.createElement("div");
+    card.className = "report-card";
+
+    const userMsg = document.createElement("p");
+    userMsg.className = "report-field";
+    userMsg.innerHTML = `<strong>User:</strong> ${escapeHtml(report.userMessage)}`;
+
+    const aiMsg = document.createElement("p");
+    aiMsg.className = "report-field";
+    aiMsg.innerHTML = `<strong>AI:</strong> ${escapeHtml(report.aiResponse)}`;
+
+    const noteInput = document.createElement("textarea");
+    noteInput.className = "report-note-input";
+    noteInput.placeholder = "Note for the user (optional)...";
+
+    const acceptBtn = document.createElement("button");
+    acceptBtn.className = "report-accept-btn";
+    acceptBtn.textContent = "✓ Accept & Notify User";
+    acceptBtn.addEventListener("click", async () => {
+      acceptBtn.disabled = true;
+      acceptBtn.textContent = "Saving...";
+      await update(ref(db, "reports/" + id), {
+        status: "reviewed",
+        note: noteInput.value.trim(),
+        reviewedAt: Date.now()
+      });
+    });
+
+    card.appendChild(userMsg);
+    card.appendChild(aiMsg);
+    card.appendChild(noteInput);
+    card.appendChild(acceptBtn);
+    reportsListEl.appendChild(card);
+  });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Live-update reports list whenever admin panel is open
+onValue(ref(db, "reports"), (snap) => {
+  renderReports(snap.val());
+});
