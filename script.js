@@ -638,19 +638,30 @@ async function checkForReviewedReports() {
     const reports = snap.val();
 
     for (const [id, report] of Object.entries(reports)) {
-      if (report.userId === USER_ID && report.status === "reviewed" && !report.seen) {
-        // Show overlay
+      if (report.userId === USER_ID && !report.seen &&
+          (report.status === "reviewed" || report.status === "rejected")) {
+
+        if (report.status === "reviewed") {
+          reviewOverlay.querySelector("h1").textContent = "We reviewed your report";
+          reviewOverlay.querySelector(".review-icon").textContent = "✅";
+          reviewNoteEl.textContent = report.note && report.note.trim() !== ""
+            ? report.note
+            : "Thanks for helping us improve TestAI.";
+        } else {
+          reviewOverlay.querySelector("h1").textContent = "Your report was not accepted";
+          reviewOverlay.querySelector(".review-icon").textContent = "❌";
+          reviewNoteEl.textContent = report.note && report.note.trim() !== ""
+            ? report.note
+            : "After reviewing, we found no issue with this response.";
+        }
+
         reviewMsgEl.textContent = report.aiResponse.length > 240
           ? report.aiResponse.substring(0, 240) + "..."
           : report.aiResponse;
-        reviewNoteEl.textContent = report.note && report.note.trim() !== ""
-          ? report.note
-          : "Thanks for helping us improve TestAI.";
-        reviewOverlay.classList.add("active");
 
-        // Mark as seen so it won't show again
+        reviewOverlay.classList.add("active");
         await update(ref(db, "reports/" + id), { seen: true });
-        break; // only show one at a time
+        break;
       }
     }
   } catch (e) {
@@ -701,6 +712,8 @@ function renderReports(reports) {
     acceptBtn.textContent = "✓ Accept & Notify User";
     acceptBtn.addEventListener("click", async () => {
       acceptBtn.disabled = true;
+      rejectBtn.disabled = true;
+      dismissBtn.disabled = true;
       acceptBtn.textContent = "Saving...";
       await update(ref(db, "reports/" + id), {
         status: "reviewed",
@@ -709,10 +722,46 @@ function renderReports(reports) {
       });
     });
 
+    const rejectBtn = document.createElement("button");
+    rejectBtn.className = "report-reject-btn";
+    rejectBtn.textContent = "✕ Reject & Notify User";
+    rejectBtn.addEventListener("click", async () => {
+      acceptBtn.disabled = true;
+      rejectBtn.disabled = true;
+      dismissBtn.disabled = true;
+      rejectBtn.textContent = "Saving...";
+      await update(ref(db, "reports/" + id), {
+        status: "rejected",
+        note: noteInput.value.trim(),
+        reviewedAt: Date.now()
+      });
+    });
+
+    const dismissBtn = document.createElement("button");
+    dismissBtn.className = "report-dismiss-btn";
+    dismissBtn.textContent = "— Dismiss (no notification)";
+    dismissBtn.addEventListener("click", async () => {
+      acceptBtn.disabled = true;
+      rejectBtn.disabled = true;
+      dismissBtn.disabled = true;
+      dismissBtn.textContent = "Dismissing...";
+      await update(ref(db, "reports/" + id), {
+        status: "dismissed",
+        seen: true,
+        reviewedAt: Date.now()
+      });
+    });
+
+    const btnRow = document.createElement("div");
+    btnRow.className = "report-btn-row";
+    btnRow.appendChild(acceptBtn);
+    btnRow.appendChild(rejectBtn);
+    btnRow.appendChild(dismissBtn);
+
     card.appendChild(userMsg);
     card.appendChild(aiMsg);
     card.appendChild(noteInput);
-    card.appendChild(acceptBtn);
+    card.appendChild(btnRow);
     reportsListEl.appendChild(card);
   });
 }
