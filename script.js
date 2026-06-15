@@ -27,7 +27,6 @@ function getUserId() {
 }
 const USER_ID = getUserId();
 
-// ── Cloudflare Worker URL ──────────────────────────────────────────────
 const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev";
 
 const TEXT_MODEL  = "openai/gpt-oss-120b:free";
@@ -353,10 +352,19 @@ async function loadContext() {
 // ════════════════════════════════════════════════════
 // AI CALLS (via Worker)
 // ════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// CONVERSATION HISTORY
+// ════════════════════════════════════════════════════
+const conversationHistory = []; // { role: "user"|"assistant", content: string }
+
 async function sendTextToAI(userMessage) {
+  // Add the new user message to history
+  conversationHistory.push({ role: "user", content: userMessage });
+
   const messages = [];
   if (systemContext) messages.push({ role: "system", content: systemContext.trim() });
-  messages.push({ role: "user", content: userMessage });
+  // Send the full conversation so the AI remembers what it said
+  messages.push(...conversationHistory);
 
   const res = await fetch(WORKER_URL + "/chat", {
     method: "POST",
@@ -366,8 +374,18 @@ async function sendTextToAI(userMessage) {
 
   if (!res.ok) throw new Error("HTTP " + res.status);
   const data = await res.json();
+  console.log("Text API raw response:", data);
+
+  if (data?.error) {
+    throw new Error(data.error.message || JSON.stringify(data.error));
+  }
+
   const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("Empty response from model.");
+  if (!text) throw new Error("Empty response from model. Check console for raw response.");
+
+  // Add the AI reply to history so next message includes it
+  conversationHistory.push({ role: "assistant", content: text });
+
   return text;
 }
 
@@ -627,7 +645,7 @@ async function checkForReviewedReports() {
           : report.aiResponse;
         reviewNoteEl.textContent = report.note && report.note.trim() !== ""
           ? report.note
-          : "Your report has been reviewed and accepted";
+          : "Thanks for helping us improve TestAI.";
         reviewOverlay.classList.add("active");
 
         // Mark as seen so it won't show again
