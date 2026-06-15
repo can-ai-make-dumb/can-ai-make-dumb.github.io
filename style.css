@@ -572,3 +572,40 @@ body::-webkit-scrollbar-thumb { background: #b0b0b0; border-radius: 4px; }
   transition: opacity 0.15s, transform 0.1s;
 }
 .review-close-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* ════ REPORT BUTTON ROW ════ */
+.report-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.report-reject-btn {
+  background: #2a2a2a;
+  border: 1px solid #c0392b;
+  border-radius: 8px;
+  color: #e74c3c;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 9px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.report-reject-btn:hover { background: #3a1a1a; }
+.report-reject-btn:disabled { opacity: 0.6; cursor: default; }
+
+.report-dismiss-btn {
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #666;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.report-dismiss-btn:hover { border-color: #555; color: #999; }
+.report-dismiss-btn:disabled { opacity: 0.6; cursor: default; }
