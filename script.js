@@ -27,6 +27,8 @@ function getUserId() {
 }
 const USER_ID = getUserId();
 
+// ── Cloudflare Worker URL ──────────────────────────────────────────────
+// Trage hier deine Worker URL ein nachdem du worker.js deployed hast
 const WORKER_URL = "https://can-ai-make-dumb.rechts-glamour-0a.workers.dev";
 
 const TEXT_MODEL  = "openai/gpt-oss-120b:free";
@@ -390,47 +392,21 @@ async function sendTextToAI(userMessage) {
 }
 
 async function sendImageToAI(prompt) {
-  const res = await fetch(WORKER_URL + "/image", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, model: IMAGE_MODEL })
+  // Pollinations.AI — kostenlos, kein API-Key nötig
+  // Gibt direkt eine Bild-URL zurück
+  const encoded = encodeURIComponent(prompt);
+  const seed = Math.floor(Math.random() * 99999);
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=768&height=768&seed=${seed}&nologo=true`;
+
+  // Preload the image to check it actually loads
+  await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = resolve;
+    img.onerror = () => reject(new Error("Image could not be generated. Try a different prompt."));
+    img.src = url;
   });
 
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const data = await res.json();
-
-  // Debug: log raw response so you can inspect the exact shape in DevTools
-  console.log("Image API raw response:", data);
-
-  const msg = data?.choices?.[0]?.message;
-  if (!msg) {
-    throw new Error(data?.error?.message || "No message in response.");
-  }
-
-  // Format 1: OpenRouter "images" array (Gemini/Imagen style)
-  if (Array.isArray(msg.images) && msg.images.length > 0) {
-    const img = msg.images[0];
-    if (typeof img === "string") return img;
-    if (img.image_url?.url) return img.image_url.url;
-    if (img.url) return img.url;
-  }
-
-  // Format 2: content is a string URL or data URI
-  if (typeof msg.content === "string" && msg.content.trim() !== "") {
-    const c = msg.content.trim();
-    if (c.startsWith("http") || c.startsWith("data:image")) return c;
-  }
-
-  // Format 3: content is an array of parts containing image_url
-  if (Array.isArray(msg.content)) {
-    const imgPart = msg.content.find(p => p.type === "image_url" || p.type === "image");
-    if (imgPart) {
-      if (imgPart.image_url?.url) return imgPart.image_url.url;
-      if (imgPart.url) return imgPart.url;
-    }
-  }
-
-  throw new Error("Unexpected image format from model. Check console for raw response.");
+  return url;
 }
 
 // ════════════════════════════════════════════════════
