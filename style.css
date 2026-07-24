@@ -1,7 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ════════════════════════════════════════════════════════════
-   LIQUID GLASS DESIGN SYSTEM
+   LIQUID GLASS DESIGN SYSTEM test
    Every surface = multiple stacked layers:
    1) a soft colour wash (so there is something to refract)
    2) backdrop-filter blur + saturate (the actual "glass")
